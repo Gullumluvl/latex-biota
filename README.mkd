@@ -1,11 +1,16 @@
 Small command-line ecosystem to ease latex production
 =====================================================
 
+*Content*
+
+- `latex_list_graphics.py`
+
 # Disclaimer
 
 Contains ugly hacks, was incompletely tested and is only intended to fit my personal needs.
 
 # latex_list_graphics
+
 
 Find the commands including images in a source tex document, and list the
 corresponding files on disk.
@@ -16,6 +21,14 @@ Searched commands are:
 - `\multiinclude` (beamer)
 
 (Uses regex. Should use a parsing module, I know.)
+
+## Usage
+
+    # For help
+    ./latex_list_graphics.py -h
+
+    ./latex_list_graphics.py mypresentation.tex
+    
 
 # Licence
 
