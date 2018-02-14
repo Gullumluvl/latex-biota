@@ -1,5 +1,5 @@
-Small tools to ease latex production
-====================================
+Small command-line ecosystem to ease latex production
+=====================================================
 
 # Disclaimer
 
@@ -19,5 +19,5 @@ Searched commands are:
 
 # Licence
 
-This ugly code is licensed under the [WTFPL -- Do What the Fuck You Want to
-Public License](http://www.wtfpl.net/).
+This atrocious code is licensed under the [WTFPL -- Do What the Fuck You Want
+to Public License](http://www.wtfpl.net/).
