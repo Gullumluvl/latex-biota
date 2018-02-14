@@ -1,0 +1,23 @@
+Small tools to ease latex production
+====================================
+
+# Disclaimer
+
+Contains ugly hacks, was incompletely tested and is only intended to fit my personal needs.
+
+# latex_list_graphics
+
+Find the commands including images in a source tex document, and list the
+corresponding files on disk.
+
+Searched commands are:
+
+- `\includegraphics`
+- `\multiinclude` (beamer)
+
+(Uses regex. Should use a parsing module, I know.)
+
+# Licence
+
+This ugly code is licensed under the [WTFPL -- Do What the Fuck You Want to
+Public License](http://www.wtfpl.net/).
