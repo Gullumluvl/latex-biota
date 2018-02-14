@@ -1,7 +1,7 @@
 Small command-line ecosystem to ease latex production
 =====================================================
 
-*Content*
+**Content**
 
 - `latex_list_graphics.py`
 
