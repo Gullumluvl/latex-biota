@@ -90,6 +90,7 @@ def get_implicit_ext_files(abspathroot, first=False):
 
 def figs2files(sourcefile, matched, command, options, path, ext):
     """Find the filenames each include corresponds to."""
+    # capture \multiinclude option values
     ext_re   = re.compile(r'format\s*=\s*([a-zA-Z-0-9]+)\s*[,\]]') 
     start_re = re.compile(r'start\s*=\s*([0-9]+)\s*[,\]]') 
     end_re   = re.compile(r'end\s*=\s*([0-9]+)\s*[,\]]') 
@@ -105,7 +106,8 @@ def figs2files(sourcefile, matched, command, options, path, ext):
         #print(absp)
 
         if cmd == 'multiinclude':
-            fn_pattern = absp + '-%s'
+            # Search filename using the start of the absolute path
+            fn_pattern = absp.replace('%', '%%')
 
             # Get start from options
             start_m = start_re.search(opt)
@@ -115,10 +117,10 @@ def figs2files(sourcefile, matched, command, options, path, ext):
             ext_m = ext_re.search(opt)
             if ext_m:
                 e = '.' + ext_m.group(1)
-                fn_pattern += e
+                fn_pattern += '-%s' + e
             else:
-                fn_pattern.replace('-%s', '.%s')
-                # That what multiinclude does.
+                fn_pattern += '.%s'
+                # That's what multiinclude does (MetaPost output).
 
             # get end
             end_m = end_re.search(opt)
@@ -129,8 +131,14 @@ def figs2files(sourcefile, matched, command, options, path, ext):
                 end = None
                 filenames = set()  # /!\ different type 
                 
+                # Escape any '%' to avoid unexpected string formatting error
+                # Escape but keep formatting signs ok.
+                re_fn_nb = re.compile(
+                                re.escape(fn_pattern).replace(r'\%', '%') % \
+                                    r'(\d+)')
+                
                 for fn in glob(fn_pattern % '*'):
-                    number_match = re.search(fn_pattern % '(\d+)', fn)
+                    number_match = re_fn_nb.search(fn)
                     if number_match and int(number_match.group(1))>=start:
                         filenames.add(fn)
 
