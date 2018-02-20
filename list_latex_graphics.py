@@ -17,10 +17,12 @@ ALLOWED_EXT += [_.upper() for _ in ALLOWED_EXT]
 
 def get_fig_list(infile):
     
-    # TODO: check that line is not commented out
+    comment_regex = re.compile(r'%.*(?=\r?\n|$)$', re.MULTILINE)
 
-    comment_regex = re.compile(r'%.*$')
-
+    # For positive control: count each occurence of the command.
+    # Do not capture match.
+    command_regex = re.compile(r'(?=\\(includegraphics|multiinclude)\b)')
+    
     #fig_regex = re.compile(r'\\includegraphics',
     #fig_regex = re.compile(r'\\includegraphics\s*(\[.*?\])?',
     gr_pat = r'''#^[^%\n]*             # Uncommented line
@@ -35,8 +37,15 @@ def get_fig_list(infile):
     #gr_pat = r'^[^%]*?\\(includegraphics|multiinclude)(<.*>)?\s*(\[.*?\]\s*)?\{\s*([^\n]*)\s*\}(\.[a-zA-Z0-9]\s*\})?'
     gr_regex = re.compile(gr_pat, (re.MULTILINE | re.VERBOSE))
     with open(infile) as f:
-        # Uncomment while reading
-        source = ''.join([comment_regex.sub('', line) for line in f])
+        source = f.read()
+
+    all_cmds = len(command_regex.findall(source)) # better than str.count?
+    # Delete comments
+    source = comment_regex.sub('', source)
+    uncom_cmds = len(command_regex.findall(source))
+    # Positive control
+    print("Found %d include commands (%d uncommented)." % (all_cmds, uncom_cmds),
+            file=stderr)
 
     matched = []
     command = []
@@ -58,6 +67,7 @@ def get_fig_list(infile):
         #if command[-1] == 'multiinclude': print(match.groups())
     #print(match.groups())
 
+    assert len(matched) == uncom_cmds
     return matched, command, options, path, ext
 
 
