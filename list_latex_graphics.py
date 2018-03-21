@@ -11,7 +11,7 @@ import argparse as ap
 from glob import glob
 
 
-ALLOWED_EXT = ['.png', '.jpg', '.pdf', '.gif', '.eps']
+ALLOWED_EXT = ['.png', '.jpg', '.pdf', '.gif', '.eps', '.jpeg']
 ALLOWED_EXT += [_.upper() for _ in ALLOWED_EXT]
 
 
