@@ -21,12 +21,12 @@ def get_fig_list(infile):
 
     # For positive control: count each occurence of the command.
     # Do not capture match.
-    command_regex = re.compile(r'(?=\\(includegraphics|multiinclude)\b)')
+    command_regex = re.compile(r'(?=\\(includegraphics|multiinclude|uncovergraphics)\b)')
     
     #fig_regex = re.compile(r'\\includegraphics',
     #fig_regex = re.compile(r'\\includegraphics\s*(\[.*?\])?',
     gr_pat = r'''#^[^%\n]*             # Uncommented line
-    \\(includegraphics|multiinclude)
+    \\(includegraphics|multiinclude|uncovergraphics)
     \s*
     (<.*>\s*)?                           # Overlay specification
     (\[(?:.|\n)*?\]\s*)?                # Options
@@ -145,7 +145,7 @@ def figs2files(sourcefile, matched, command, options, path, ext):
             #print('ext:', e, 'start:', start, 'end:', end,
             #      'N:', len(filenames))
                 
-        elif cmd == 'includegraphics':
+        elif cmd == 'includegraphics' or cmd == 'uncovergraphics':
             if e:
                 absp += e
             elif not p.endswith('}'):
