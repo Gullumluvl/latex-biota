@@ -88,9 +88,10 @@ def get_implicit_ext_files(abspathroot, first=False):
     return files
 
 
-def figs2files(sourcefile, matched, command, options, path, ext):
+def figs2files(sourcefile, matched, command, options, path, ext, raise_=False):
     """Find the filenames each include corresponds to."""
     # capture \multiinclude option values
+
     ext_re   = re.compile(r'format\s*=\s*([a-zA-Z-0-9]+)\s*[,\]]') 
     start_re = re.compile(r'start\s*=\s*([0-9]+)\s*[,\]]') 
     end_re   = re.compile(r'end\s*=\s*([0-9]+)\s*[,\]]') 
@@ -155,28 +156,41 @@ def figs2files(sourcefile, matched, command, options, path, ext):
             filenames = [absp]
         
         if not filenames:
-            raise ValueError('No files for %r' % p)
+            msg = 'No files for %r' % p
+            if _raise:
+                raise FileNotFoundError(msg)
+            else:
+                print('WARNING:' + msg, file=stderr)
 
         if not e:
             for fn in filenames:
                 foundfiles = get_implicit_ext_files(fn)
                 if not foundfiles:
-                    raise ValueError('No files for %r' % fn)
+                    msg = 'No files for %r' % fn
+                    if raise_:
+                        raise FileNotFoundError(msg)
+                    else:
+                        print('WARNING:' + msg, file=stderr)
 
                 actual_files.extend(foundfiles)
         else:
             for fn in filenames:
-                assert op.isfile(fn) or op.islink(fn)
+                if not op.isfile(fn) and not op.islink(fn):
+                    msg = "Not a file/link: %r" % fn
+                    if raise_:
+                        raise FileNotFoundError(msg)
+                    else:
+                        print('WARNING:' + msg, file=stderr)
             actual_files.extend(filenames)
 
     return sorted(set(actual_files))
 
 
-def main(infile):
+def main(infile, raise_=False):
     figs = get_fig_list(infile)
     #print(len(figs[0]), '\n---')
 
-    figfiles = figs2files(infile, *figs)
+    figfiles = figs2files(infile, *figs, raise_=raise_)
     print('\n'.join(figfiles))
     print("Found %d files for %d include commands" \
             % (len(figfiles),len(figs[0])),
@@ -187,6 +201,8 @@ def main(infile):
 if __name__ == '__main__':
     parser = ap.ArgumentParser(description=__doc__)
     parser.add_argument('infile')
+    parser.add_argument('-r', '--raise', dest='raise_', action='store_true',
+                        help='Raise FileNotFoundError instead of simple warning.')
     
     args = parser.parse_args()
     main(**vars(args))
