@@ -14,38 +14,37 @@ from glob import glob
 ALLOWED_EXT = ['.png', '.jpg', '.pdf', '.gif', '.eps', '.jpeg']
 ALLOWED_EXT += [_.upper() for _ in ALLOWED_EXT]
 
+COMMENT_REGEX = re.compile(r'%.*(?=\r?\n|$)$', re.MULTILINE)
+
+# For positive control: count each occurence of the command.
+# Do not capture match.
+COMMAND_REGEX = re.compile(r'(?=\\(includegraphics|multiinclude|uncovergraphics)\b)')
+
+GR_PAT = r'''#^[^%\n]*             # Uncommented line
+\\(includegraphics|multiinclude|uncovergraphics)
+\s*
+(<.*>\s*)?                           # Overlay specification
+(\[(?:.|\n)*?\]\s*)?                # Options
+\{\s*(.+?)                          # path to file
+(\}\.[a-zA-Z0-9]+)?          # If extra pair of brackets
+\s*\}.*[{\\n]?
+'''
+#GR_PAT = r'^[^%]*?\\(includegraphics|multiinclude)(<.*>)?\s*(\[.*?\]\s*)?\{\s*([^\n]*)\s*\}(\.[a-zA-Z0-9]\s*\})?'
+GR_REGEX = re.compile(GR_PAT, (re.MULTILINE | re.VERBOSE))
+
 
 def get_fig_list(infile):
-    
-    comment_regex = re.compile(r'%.*(?=\r?\n|$)$', re.MULTILINE)
 
-    # For positive control: count each occurence of the command.
-    # Do not capture match.
-    command_regex = re.compile(r'(?=\\(includegraphics|multiinclude|uncovergraphics)\b)')
-    
-    #fig_regex = re.compile(r'\\includegraphics',
-    #fig_regex = re.compile(r'\\includegraphics\s*(\[.*?\])?',
-    gr_pat = r'''#^[^%\n]*             # Uncommented line
-    \\(includegraphics|multiinclude|uncovergraphics)
-    \s*
-    (<.*>\s*)?                           # Overlay specification
-    (\[(?:.|\n)*?\]\s*)?                # Options
-    \{\s*(.+?)                          # path to file
-    (\}\.[a-zA-Z0-9]+)?          # If extra pair of brackets
-    \s*\}.*[{\\n]?
-    '''
-    #gr_pat = r'^[^%]*?\\(includegraphics|multiinclude)(<.*>)?\s*(\[.*?\]\s*)?\{\s*([^\n]*)\s*\}(\.[a-zA-Z0-9]\s*\})?'
-    gr_regex = re.compile(gr_pat, (re.MULTILINE | re.VERBOSE))
     with open(infile) as f:
         source = f.read()
 
-    all_cmds = len(command_regex.findall(source)) # better than str.count?
+    all_cmds = len(COMMAND_REGEX.findall(source)) # better than str.count?
     # Delete comments
-    source = comment_regex.sub('', source)
-    uncom_cmds = len(command_regex.findall(source))
+    source = COMMENT_REGEX.sub('', source)
+    uncom_cmds = len(COMMAND_REGEX.findall(source))
     # Positive control
     print("Found %d include commands (%d uncommented)." % (all_cmds, uncom_cmds),
-            file=stderr)
+          file=stderr)
 
     matched = []
     command = []
@@ -53,7 +52,7 @@ def get_fig_list(infile):
     path = []
     ext = []
 
-    for match in gr_regex.finditer(source):
+    for match in GR_REGEX.finditer(source):
         matched.append(match.group(0))
         command.append(match.group(1))
         options.append(match.group(3))
@@ -72,20 +71,32 @@ def get_fig_list(infile):
 
 
 def get_abspath(fn, sourcedir='.'):
+    """Expand ~, ~username, $HOME or get absolute path."""
     fn = op.expanduser(fn)
     if not op.isabs(fn):
         fn = op.abspath(op.join(sourcedir, fn))
     return fn
 
 
-def get_implicit_ext_files(abspathroot, first=False):
+def get_implicit_ext_files(abspathroot, allowed_ext=ALLOWED_EXT, first=False):
     files = []
-    for e in ALLOWED_EXT:
+    for e in allowed_ext:
         if op.isfile(abspathroot + e) or op.islink(abspathroot + e):
             files.append(abspathroot + e)
             if first: break
-    
+
     return files
+
+
+def parse_ext_includegraphics(p, relp, absp, e=None, allowed_ext=ALLOWED_EXT):
+    filename = absp
+    if e:
+        filename += e
+    elif not p.endswith('}'):
+        _, e = op.splitext(relp)
+        if e and e not in allowed_ext:
+            raise ValueError('Invalid includegraphics extension %r (%s)' % (e, p))
+    return filename, e
 
 
 def figs2files(sourcefile, matched, command, options, path, ext, raise_=False):
@@ -95,9 +106,9 @@ def figs2files(sourcefile, matched, command, options, path, ext, raise_=False):
     ext_re   = re.compile(r'format\s*=\s*([a-zA-Z-0-9]+)\s*[,\]]') 
     start_re = re.compile(r'start\s*=\s*([0-9]+)\s*[,\]]') 
     end_re   = re.compile(r'end\s*=\s*([0-9]+)\s*[,\]]') 
-    
+
     sourcedir = op.dirname(sourcefile)
-    
+
     actual_files = []
 
     for i, (m,cmd,opt,p,e) in enumerate(
@@ -147,13 +158,8 @@ def figs2files(sourcefile, matched, command, options, path, ext, raise_=False):
             #      'N:', len(filenames))
                 
         elif cmd == 'includegraphics' or cmd == 'uncovergraphics':
-            if e:
-                absp += e
-            elif not p.endswith('}'):
-                _, e = op.splitext(relp)
-                if e and e not in ALLOWED_EXT:
-                    raise ValueError('Invalid includegraphics extension %r (%s)' % (e, p))
-            filenames = [absp]
+            filename, e = parse_ext_includegraphics(p, relp, absp, ext)
+            filenames = [filename]
         
         if not filenames:
             msg = 'No files for %r' % p
