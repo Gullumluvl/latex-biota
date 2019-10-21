@@ -2,7 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """Convert "columns" and "block" environments to the correct
-fenced divs with attributes (for revealjs slides)."""
+fenced divs with attributes (for revealjs slides).
+
+Produces pandoc markdown. DEPRECATED. Use `pandoc_filters/beamer_reveal.py`.
+"""
 
 
 from sys import stdin

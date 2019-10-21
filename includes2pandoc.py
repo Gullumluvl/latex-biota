@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""Convert multiline includegraphics/multiinclude statements into single line,
-in a latex source file"""
+"""
+Convert multiline includegraphics/multiinclude statements into single line,
+in a latex source file.
+
+WARNING: this creates .svg files with Inkscape if needed [Currently disabled].
+"""
 
 #TODO: convert multiinclude into myslideshow
 

@@ -103,9 +103,9 @@ def figs2files(sourcefile, matched, command, options, path, ext, raise_=False):
     """Find the filenames each include corresponds to."""
     # capture \multiinclude option values
 
-    ext_re   = re.compile(r'format\s*=\s*([a-zA-Z-0-9]+)\s*[,\]]') 
-    start_re = re.compile(r'start\s*=\s*([0-9]+)\s*[,\]]') 
-    end_re   = re.compile(r'end\s*=\s*([0-9]+)\s*[,\]]') 
+    ext_re   = re.compile(r'format\s*=\s*([a-zA-Z-0-9]+)\s*[,\]]')
+    start_re = re.compile(r'start\s*=\s*([0-9]+)\s*[,\]]')
+    end_re   = re.compile(r'end\s*=\s*([0-9]+)\s*[,\]]')
 
     sourcedir = op.dirname(sourcefile)
 
@@ -141,7 +141,7 @@ def figs2files(sourcefile, matched, command, options, path, ext, raise_=False):
                 filenames = [fn_pattern % number for number in range(start, end+1)]
             else:
                 end = None
-                filenames = set()  # /!\ different type 
+                filenames = set()  # /!\ different type
                 
                 # Escape any '%' to avoid unexpected string formatting error
                 # Escape but keep formatting signs ok.
