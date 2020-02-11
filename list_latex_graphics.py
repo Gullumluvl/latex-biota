@@ -192,9 +192,15 @@ def figs2files(sourcefile, matched, command, options, path, ext, raise_=False):
     return sorted(set(actual_files))
 
 
-def main(infile, raise_=False):
+def main(infile, raise_=False, file_check=True):
     figs = get_fig_list(infile)
     #print(len(figs[0]), '\n---')
+
+    if not file_check:
+        for p,e in zip(*figs[-2:]):
+            relp = p.replace('\\string', '').lstrip('{\t ').rstrip('}\t ')
+            print(relp)
+        return
 
     figfiles = figs2files(infile, *figs, raise_=raise_)
     print('\n'.join(figfiles))
@@ -209,7 +215,10 @@ if __name__ == '__main__':
     parser.add_argument('infile')
     parser.add_argument('-r', '--raise', dest='raise_', action='store_true',
                         help='Raise FileNotFoundError instead of simple warning.')
-    
+    parser.add_argument('-n', '--no-check', '--no-file-check',
+                        dest='file_check', action='store_false',
+                        help='Do not glob files and do not check if they exist.')
+
     args = parser.parse_args()
     main(**vars(args))
 
