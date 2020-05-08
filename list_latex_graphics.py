@@ -11,7 +11,8 @@ import argparse as ap
 from glob import glob
 
 
-ALLOWED_EXT = ['.png', '.jpg', '.pdf', '.gif', '.eps', '.jpeg']
+# Order reflects priority
+ALLOWED_EXT = ['.pdf', '.png', '.jpg', '.jpeg', '.gif', '.eps']
 ALLOWED_EXT += [_.upper() for _ in ALLOWED_EXT]
 
 COMMENT_REGEX = re.compile(r'%.*(?=\r?\n|$)$', re.MULTILINE)
@@ -43,7 +44,8 @@ def get_fig_list(infile):
     source = COMMENT_REGEX.sub('', source)
     uncom_cmds = len(COMMAND_REGEX.findall(source))
     # Positive control
-    print("Found %d include commands (%d uncommented)." % (all_cmds, uncom_cmds),
+    print("    [%s]:Found %d include commands (%d uncommented)." % (
+            infile, all_cmds, uncom_cmds),
           file=stderr)
 
     matched = []
@@ -78,12 +80,12 @@ def get_abspath(fn, sourcedir='.'):
     return fn
 
 
-def get_implicit_ext_files(abspathroot, allowed_ext=ALLOWED_EXT, first=False):
+def get_implicit_ext_files(abspathroot, uniq=False, allowed_ext=ALLOWED_EXT):
     files = []
     for e in allowed_ext:
         if op.isfile(abspathroot + e) or op.islink(abspathroot + e):
             files.append(abspathroot + e)
-            if first: break
+            if uniq: break
 
     return files
 
@@ -99,7 +101,8 @@ def parse_ext_includegraphics(p, relp, absp, e=None, allowed_ext=ALLOWED_EXT):
     return filename, e
 
 
-def figs2files(sourcefile, matched, command, options, path, ext, raise_=False):
+def figs2files(sourcefile, matched, command, options, path, ext, raise_=False,
+               src_dir=None, uniq=False):
     """Find the filenames each include corresponds to."""
     # capture \multiinclude option values
 
@@ -107,7 +110,7 @@ def figs2files(sourcefile, matched, command, options, path, ext, raise_=False):
     start_re = re.compile(r'start\s*=\s*([0-9]+)\s*[,\]]')
     end_re   = re.compile(r'end\s*=\s*([0-9]+)\s*[,\]]')
 
-    sourcedir = op.dirname(sourcefile)
+    sourcedir = op.dirname(sourcefile) if src_dir is None else src_dir
 
     actual_files = []
 
@@ -158,7 +161,7 @@ def figs2files(sourcefile, matched, command, options, path, ext, raise_=False):
             #      'N:', len(filenames))
                 
         elif cmd == 'includegraphics' or cmd == 'uncovergraphics':
-            filename, e = parse_ext_includegraphics(p, relp, absp, ext)
+            filename, e = parse_ext_includegraphics(p, relp, absp, e)
             filenames = [filename]
         
         if not filenames:
@@ -170,7 +173,7 @@ def figs2files(sourcefile, matched, command, options, path, ext, raise_=False):
 
         if not e:
             for fn in filenames:
-                foundfiles = get_implicit_ext_files(fn)
+                foundfiles = get_implicit_ext_files(fn, uniq)
                 if not foundfiles:
                     msg = 'No files for %r' % fn
                     if raise_:
@@ -192,32 +195,41 @@ def figs2files(sourcefile, matched, command, options, path, ext, raise_=False):
     return sorted(set(actual_files))
 
 
-def main(infile, raise_=False, file_check=True):
-    figs = get_fig_list(infile)
-    #print(len(figs[0]), '\n---')
+def main(infiles, raise_=False, file_check=True, src_dir=None, uniq=False):
+    for infile in infiles:
+        figs = get_fig_list(infile)
+        #print(len(figs[0]), '\n---')
 
-    if not file_check:
-        for p,e in zip(*figs[-2:]):
-            relp = p.replace('\\string', '').lstrip('{\t ').rstrip('}\t ')
-            print(relp)
-        return
-
-    figfiles = figs2files(infile, *figs, raise_=raise_)
-    print('\n'.join(figfiles))
-    print("Found %d files for %d include commands" \
-            % (len(figfiles),len(figs[0])),
-          file=stderr)
-    #print([len(s) for s in figs])
+        if len(figs[0]):
+            if not file_check:
+                for p,e in zip(*figs[-2:]):
+                    relp = p.replace('\\string', '').lstrip('{\t ').rstrip('}\t ')
+                    print(relp)
+            else:
+                figfiles = figs2files(infile, *figs, raise_=raise_,
+                                      src_dir=src_dir, uniq=uniq)
+                print("    [%s]:Found %d files for %d include commands." \
+                        % (infile, len(figfiles), len(figs[0])),
+                      file=stderr)
+                if figfiles:
+                    print('\n'.join(figfiles))
+            #print([len(s) for s in figs])
 
 
 if __name__ == '__main__':
     parser = ap.ArgumentParser(description=__doc__)
-    parser.add_argument('infile')
+    parser.add_argument('infiles', nargs='+')
     parser.add_argument('-r', '--raise', dest='raise_', action='store_true',
                         help='Raise FileNotFoundError instead of simple warning.')
     parser.add_argument('-n', '--no-check', '--no-file-check',
                         dest='file_check', action='store_false',
                         help='Do not glob files and do not check if they exist.')
+    parser.add_argument('-s', '--src-dir', '--source-dir',
+                        help='Directory from where pdflatex is run.')
+    parser.add_argument('-u', '--uniq', action='store_true',
+                        help=('If multiple matching files (different extensio'
+                              'ns, only output one (by priority, i.e. pdf fir'
+                              'st)'))
 
     args = parser.parse_args()
     main(**vars(args))
