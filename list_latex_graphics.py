@@ -4,7 +4,7 @@
 """Extract the list of included figures from a latex source file"""
 
 
-from sys import stderr
+from sys import stderr, stdin
 import re
 import os.path as op
 import argparse as ap
@@ -36,7 +36,7 @@ GR_REGEX = re.compile(GR_PAT, (re.MULTILINE | re.VERBOSE))
 
 def get_fig_list(infile):
 
-    with open(infile) as f:
+    with (stdin if infile=='-' else open(infile)) as f:
         source = f.read()
 
     all_cmds = len(COMMAND_REGEX.findall(source)) # better than str.count?
@@ -218,7 +218,7 @@ def main(infiles, raise_=False, file_check=True, src_dir=None, uniq=False):
 
 if __name__ == '__main__':
     parser = ap.ArgumentParser(description=__doc__)
-    parser.add_argument('infiles', nargs='+')
+    parser.add_argument('infiles', nargs='+', help="'-' for stdin.")
     parser.add_argument('-r', '--raise', dest='raise_', action='store_true',
                         help='Raise FileNotFoundError instead of simple warning.')
     parser.add_argument('-n', '--no-check', '--no-file-check',
