@@ -30,6 +30,8 @@ GR_PAT = r'''#^[^%\n]*             # Uncommented line
 (\}\.[a-zA-Z0-9]+)?          # If extra pair of brackets
 \s*\}.*[{\\n]?
 '''
+#Test: parse '%' used before newlines
+
 #GR_PAT = r'^[^%]*?\\(includegraphics|multiinclude)(<.*>)?\s*(\[.*?\]\s*)?\{\s*([^\n]*)\s*\}(\.[a-zA-Z0-9]\s*\})?'
 GR_REGEX = re.compile(GR_PAT, (re.MULTILINE | re.VERBOSE))
 
